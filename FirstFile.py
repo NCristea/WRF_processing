@@ -15,7 +15,7 @@ warnings.filterwarnings('ignore')
 
 # Create a file list of all the netCDF files
 import glob
-fileList = glob.glob('/Users/carina/desktop/WRF_data/*.nc')
+fileList = glob.glob('c:\\work\\datadrive\\WRF\\*.nc')
 fileList.sort()
 #fileList
 
@@ -39,16 +39,32 @@ def clean_netCDF(fileList):
         dsTotal.attrs['prec'] = 'Precipitation Hourly [mm]'
         dsTotal.attrs['temp2m'] = 'Two Meter Temperature [deg K]'
     # write the netcdf files back to the drive, using the year-month as the name
-        dsTotal.to_netcdf('/Users/carina/desktop/WRF_data/' + file.split('_')[6], mode = 'w')
-        print('done')
+        dsTotal.to_netcdf('c:\\work\\datadrive\\WRF\\temp2\\' + file.split('_')[3], mode = 'w')
+    print('done cleaning files')
 
 
 # call this once to create temporary cleaned netCDF files
 
 clean_netCDF(fileList)
 
-dsTotal = xarray.open_mfdataset('/Users/carina/desktop/WRF_data/*.nc')
+dsTotal = xarray.open_mfdataset('c:\\work\\datadrive\\WRF\\temp2\\*.nc')
 dsTotal.chunk({'time':400,'x':50,'y':50})
+
+#this loops through the lon list and back calculates the x and y indices needed to plot or extract data
+
+bb = {'minLong':-119.40, 'maxLong':-119.20, 'minLat': 37.73, 'maxLat':37.96}
+
+long = dsTotal.coords['longitude'].values
+lat = dsTotal.coords['latitude'].values
+
+xycord = np.where( (long > bb['minLong'] ) & (long < bb['maxLong']) & (lat > bb['minLat']) & (lat < bb['maxLat'])) 
+xcord = xycord[:][0] 
+ycord = xycord[:][1]
+
+for :# create for loop across length of xcord
+    selectTemp0 = dsTotal.sel_points(x = [xcord[0]], y = [ycord[0]]).temp2m.to_series()
+    selectTemp1 = dsTotal.sel_points(x = [xcord[1]], y = [ycord[1]]).temp2m.to_series()
+
 
 df = pd.read_csv('DHSVM_example.txt', sep = '\t')
 names = ['date_time', 'temp2m', 'wind2m', 'RH', 'SW', 'LW', 'Precip']
