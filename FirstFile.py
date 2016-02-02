@@ -13,9 +13,10 @@ from datetime import datetime
 
 warnings.filterwarnings('ignore')
 
+# Nicoleta path on local computer: /Users/carina/desktop/WRF_data
 # Create a file list of all the netCDF files
 import glob
-fileList = glob.glob('c:\\work\\datadrive\\WRF\\*.nc')
+fileList = glob.glob('/Users/carina/desktop/WRF_data/*.nc')
 fileList.sort()
 #fileList
 
@@ -28,7 +29,7 @@ def clean_netCDF(fileList):
 # Stores the creates a new netCDF files with coordinat
     for file in fileList:
         print(file)   
-        ds = xarray.open_dataset(file , engine = 'scipy') # may not need enginer = 'netcdf4' others are using engine = 'scipy'
+        ds = xarray.open_dataset(file , engine = 'scipy') # may not need engine = 'netcdf4' others are using engine = 'scipy'
         dates = ds.Times.to_series().apply(decode) # this creates a list of the varaibles Times in the netCDF file ds and then applies the decode function to each element
         dsTotal = xarray.Dataset({'prec': (['time','x','y'], ds.prehourly.values),
                   'temp2m':(['time','x','y'], ds.t2.values)},
@@ -39,7 +40,7 @@ def clean_netCDF(fileList):
         dsTotal.attrs['prec'] = 'Precipitation Hourly [mm]'
         dsTotal.attrs['temp2m'] = 'Two Meter Temperature [deg K]'
     # write the netcdf files back to the drive, using the year-month as the name
-        dsTotal.to_netcdf('c:\\work\\datadrive\\WRF\\temp2\\' + file.split('_')[3], mode = 'w')
+        dsTotal.to_netcdf('/Users/carina/desktop/WRF_data/temp/' + file.split('_')[6], mode = 'w')
     print('done cleaning files')
 
 
@@ -47,7 +48,7 @@ def clean_netCDF(fileList):
 
 clean_netCDF(fileList)
 
-dsTotal = xarray.open_mfdataset('c:\\work\\datadrive\\WRF\\temp2\\*.nc')
+dsTotal = xarray.open_mfdataset('/Users/carina/desktop/WRF_data/temp/*.nc')
 dsTotal.chunk({'time':400,'x':50,'y':50})
 
 #this loops through the lon list and back calculates the x and y indices needed to plot or extract data
@@ -61,10 +62,18 @@ xycord = np.where( (long > bb['minLong'] ) & (long < bb['maxLong']) & (lat > bb[
 xcord = xycord[:][0] 
 ycord = xycord[:][1]
 
-for :# create for loop across length of xcord
-    selectTemp0 = dsTotal.sel_points(x = [xcord[0]], y = [ycord[0]]).temp2m.to_series()
-    selectTemp1 = dsTotal.sel_points(x = [xcord[1]], y = [ycord[1]]).temp2m.to_series()
+all_Temp = np.zeros((dsTotal.time.shape[0], xcord.shape[0]))
 
+for i in range(xcord.shape[0]):
+    selectTemp = dsTotal.sel_points(x = [xcord[i]], y = [ycord[i]]).temp2m
+    all_Temp[:, i] = selectTemp
+
+# convert to pandas
+df_Temp = pd.DataFrame(all_Temp)
+# add time variable to data frame
+df_Time = pd.DataFrame(dsTotal.time.values)
+
+df_TimeTemp = pd.concat([df_Time, df_Temp], axis = 1)
 
 df = pd.read_csv('DHSVM_example.txt', sep = '\t')
 names = ['date_time', 'temp2m', 'wind2m', 'RH', 'SW', 'LW', 'Precip']
