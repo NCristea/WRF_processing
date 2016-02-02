@@ -1,7 +1,6 @@
 # Import a bunch of python sub packages
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
-import pandas as pd
 import numpy as np
 import xray
 import xray.ufuncs as xu
@@ -11,6 +10,8 @@ from datetime import datetime
 from dask.diagnostics import ProgressBar
 import warnings
 import os
+import pandas as pd
+from datetime import datetime
 
 warnings.filterwarnings('ignore')
 
@@ -49,3 +50,8 @@ for file in fileList:
     dsTotal.to_netcdf('/datadrive/WRF/temp/' + file.split('_')[2], mode = 'w')
 print('done')
 
+
+df = pd.read_csv('DHSVM_example.txt', sep = '\t')
+names = ['date_time', 'temp2m', 'wind2m', 'RH', 'SW', 'LW', 'Precip']
+df.columns = names
+decoded_test = datetime.strptime("10/01/2002-01", "%m/%d/%Y-%H")
