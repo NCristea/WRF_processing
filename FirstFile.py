@@ -55,3 +55,5 @@ df = pd.read_csv('DHSVM_example.txt', sep = '\t')
 names = ['date_time', 'temp2m', 'wind2m', 'RH', 'SW', 'LW', 'Precip']
 df.columns = names
 decoded_test = datetime.strptime("10/01/2002-01", "%m/%d/%Y-%H")
+
+#test changes
