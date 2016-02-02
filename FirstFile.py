@@ -15,9 +15,9 @@ warnings.filterwarnings('ignore')
 
 # Create a file list of all the netCDF files
 import glob
-fileList = glob.glob(r'c:\work\datadrive\WRF\*.nc')
+fileList = glob.glob('/Users/carina/desktop/WRF_data/*.nc')
 fileList.sort()
-fileList
+#fileList
 
 def clean_netCDF(fileList):
 
@@ -39,7 +39,7 @@ def clean_netCDF(fileList):
         dsTotal.attrs['prec'] = 'Precipitation Hourly [mm]'
         dsTotal.attrs['temp2m'] = 'Two Meter Temperature [deg K]'
     # write the netcdf files back to the drive, using the year-month as the name
-        dsTotal.to_netcdf('C:\\work\\datadrive\\WRF\\temp2\\' + file.split('_')[2], mode = 'w')
+        dsTotal.to_netcdf('/Users/carina/desktop/WRF_data/' + file.split('_')[6], mode = 'w')
         print('done')
 
 
@@ -47,11 +47,8 @@ def clean_netCDF(fileList):
 
 clean_netCDF(fileList)
 
-dsTotal = xarray.open_mfdataset(r'C:\work\datadrive\WRF\temp2\*.nc')
+dsTotal = xarray.open_mfdataset('/Users/carina/desktop/WRF_data/*.nc')
 dsTotal.chunk({'time':400,'x':50,'y':50})
-
-
-
 
 df = pd.read_csv('DHSVM_example.txt', sep = '\t')
 names = ['date_time', 'temp2m', 'wind2m', 'RH', 'SW', 'LW', 'Precip']
