@@ -13,7 +13,8 @@ from datetime import datetime
 
 warnings.filterwarnings('ignore')
 
-# Nicoleta path on local computer: /Users/carina/desktop/WRF_data
+path = '/Users/carina/desktop/WRF_data/'
+
 # Create a file list of all the netCDF files
 import glob
 fileList = glob.glob('/Users/carina/desktop/WRF_data/*.nc')
@@ -40,7 +41,7 @@ def clean_netCDF(fileList):
         dsTotal.attrs['prec'] = 'Precipitation Hourly [mm]'
         dsTotal.attrs['temp2m'] = 'Two Meter Temperature [deg K]'
     # write the netcdf files back to the drive, using the year-month as the name
-        dsTotal.to_netcdf('/Users/carina/desktop/WRF_data/temp/' + file.split('_')[6], mode = 'w')
+        dsTotal.to_netcdf(path + 'temp/' + file.split('_')[6], mode = 'w')
     print('done cleaning files')
 
 
@@ -63,10 +64,12 @@ xcord = xycord[:][0]
 ycord = xycord[:][1]
 
 all_Temp = np.zeros((dsTotal.time.shape[0], xcord.shape[0]))
+columnNames = ['date_time']
 
 for i in range(xcord.shape[0]):
     selectTemp = dsTotal.sel_points(x = [xcord[i]], y = [ycord[i]]).temp2m
     all_Temp[:, i] = selectTemp
+    columnNames.append(str(selectTemp.coords['latitude'].values[0]) + '_' + str(selectTemp.coords['longitude'].values[0]))
 
 # convert to pandas
 df_Temp = pd.DataFrame(all_Temp)
@@ -74,10 +77,16 @@ df_Temp = pd.DataFrame(all_Temp)
 df_Time = pd.DataFrame(dsTotal.time.values)
 
 df_TimeTemp = pd.concat([df_Time, df_Temp], axis = 1)
+# add names to the columns
+df_TimeTemp.columns = columnNames
+df_TimeTemp.set_index('date_time')
 
-df = pd.read_csv('DHSVM_example.txt', sep = '\t')
+#DatetimeIndex.to_datetime
+df = pd.read_csv(path + 'DHSVM_example.txt', sep = '\t')
 names = ['date_time', 'temp2m', 'wind2m', 'RH', 'SW', 'LW', 'Precip']
+temp_list = df['date_time'].values.tolist()
+df['date_time'] = datetime.strptime(temp_list, "%m/%d/%Y-%H")
 df.columns = names
-decoded_test = datetime.strptime("10/01/2002-01", "%m/%d/%Y-%H")
+decoded_test = datetime.strptime(, "%m/%d/%Y-%H")
 
 #test changes
