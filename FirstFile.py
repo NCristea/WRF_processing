@@ -66,29 +66,49 @@ xcord = xycord[:][0]
 ycord = xycord[:][1]
 
 all_Temp = np.zeros((dsTotal.time.shape[0], xcord.shape[0]))
+all_Prec = np.zeros((dsTotal.time.shape[0], xcord.shape[0]))
+
 columnNames = ['date_time']
 
 for i in range(xcord.shape[0]):
     selectTemp = dsTotal.sel_points(x = [xcord[i]], y = [ycord[i]]).temp2m
+    selectPrec = dsTotal.sel_points(x = [xcord[i]], y = [ycord[i]]).prec
     all_Temp[:, i] = selectTemp
+    all_Prec[:, i] = selectPrec
     columnNames.append(str(selectTemp.coords['latitude'].values[0]) + '_' + str(selectTemp.coords['longitude'].values[0]))
 
 # convert to pandas
 df_Temp = pd.DataFrame(all_Temp)
+df_Prec = pd.DataFrame(all_Prec)
 # add time variable to data frame
 df_Time = pd.DataFrame(dsTotal.time.values)
 
 df_TimeTemp = pd.concat([df_Time, df_Temp], axis = 1)
+df_TimePrec = pd.concat([df_Time, df_Prec], axis = 1)
 # add names to the columns
 df_TimeTemp.columns = columnNames
+df_TimePrec.columns = columnNames
+
 df_TimeTemp.set_index('date_time', inplace = True)
+df_TimePrec.set_index('date_time', inplace = True)
 
 df = pd.read_csv(path + 'DHSVM_example.txt', sep = '\t')
 names = ['date_time', 'temp2m', 'wind2m', 'RH', 'SW', 'LW', 'Precip']
 df.columns = names
 df['date_time'] = pd.to_datetime(df['date_time'], format = "%m/%d/%Y-%H")
-df.set_index('date_time',inplace = True)
+df.set_index('date_time', inplace = True)
 
-all = pd.concat([df_TimeTemp-273.15, df['temp2m']], axis = 1, join_axes = [df_TimeTemp.index])
-all.plot()
-#test changes
+all_T = pd.concat([df_TimeTemp-273.15, df['temp2m']], axis = 1, join_axes = [df_TimeTemp.index])
+all_P = pd.concat([df_TimePrec/1000, df['Precip']], axis = 1, join_axes = [df_TimeTemp.index])
+
+#all_P.plot()
+
+#example of how to explore the data
+#all_T.resample('D', how = 'mean').plot()
+#df['temp2m'].groupby(df.index.year).mean().plot()
+
+# check if precip is in the same units
+
+#test_merge = pd.merge(left = df, right = df_TimePrec['37.734_-119.348'], on='date_time')
+                      #, left_on='Precip', right_on='37.734_-119.348')
+test_concat = pd.concat(df, df_TimePrec['37.734_-119.348'], axis = 1, join_axes = [df_TimePrec.index])
