@@ -11,9 +11,11 @@ import os
 import pandas as pd
 from datetime import datetime
 
-warnings.filterwarnings('ignore')
-
 path = '/Users/carina/desktop/WRF_data/'
+filePos = 6
+# Anthony's path
+#path = 'c:\\work\\datadrive\\WRF\\'
+#filePos = 3
 
 # Create a file list of all the netCDF files
 import glob
@@ -41,7 +43,7 @@ def clean_netCDF(fileList):
         dsTotal.attrs['prec'] = 'Precipitation Hourly [mm]'
         dsTotal.attrs['temp2m'] = 'Two Meter Temperature [deg K]'
     # write the netcdf files back to the drive, using the year-month as the name
-        dsTotal.to_netcdf(path + 'temp/' + file.split('_')[6], mode = 'w')
+        dsTotal.to_netcdf(path + 'temp/' + file.split('_')[filePos], mode = 'w')
     print('done cleaning files')
 
 
@@ -79,14 +81,14 @@ df_Time = pd.DataFrame(dsTotal.time.values)
 df_TimeTemp = pd.concat([df_Time, df_Temp], axis = 1)
 # add names to the columns
 df_TimeTemp.columns = columnNames
-df_TimeTemp.set_index('date_time')
+df_TimeTemp.set_index('date_time', inplace = True)
 
-#DatetimeIndex.to_datetime
 df = pd.read_csv(path + 'DHSVM_example.txt', sep = '\t')
 names = ['date_time', 'temp2m', 'wind2m', 'RH', 'SW', 'LW', 'Precip']
-temp_list = df['date_time'].values.tolist()
-df['date_time'] = datetime.strptime(temp_list, "%m/%d/%Y-%H")
 df.columns = names
-decoded_test = datetime.strptime(, "%m/%d/%Y-%H")
+df['date_time'] = pd.to_datetime(df['date_time'], format = "%m/%d/%Y-%H")
+df.set_index('date_time',inplace = True)
 
+all = pd.concat([df_TimeTemp-273.15, df['temp2m']], axis = 1, join_axes = [df_TimeTemp.index])
+all.plot()
 #test changes
