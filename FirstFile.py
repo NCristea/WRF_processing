@@ -17,7 +17,7 @@ path = '/Users/carina/desktop/WRF_data/'
 
 # Create a file list of all the netCDF files
 import glob
-fileList = glob.glob('/Users/carina/desktop/WRF_data/*.nc')
+fileList = glob.glob(path + '*.nc')
 fileList.sort()
 #fileList
 
@@ -49,7 +49,7 @@ def clean_netCDF(fileList):
 
 clean_netCDF(fileList)
 
-dsTotal = xarray.open_mfdataset('/Users/carina/desktop/WRF_data/temp/*.nc')
+dsTotal = xarray.open_mfdataset(path + 'temp/*.nc')
 dsTotal.chunk({'time':400,'x':50,'y':50})
 
 #this loops through the lon list and back calculates the x and y indices needed to plot or extract data
