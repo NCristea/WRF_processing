@@ -34,14 +34,21 @@ def clean_netCDF(fileList):
         print(file)   
         ds = xarray.open_dataset(file , engine = 'scipy') # may not need engine = 'netcdf4' others are using engine = 'scipy'
         dates = ds.Times.to_series().apply(decode) # this creates a list of the varaibles Times in the netCDF file ds and then applies the decode function to each element
+        #calculate 2m wind speed from the 10 m u10 and v10
+        wind2m = 0.74 * np.sqrt(ds.u10.values * ds.u10.values + ds.v10.values * ds.v10.values)
         dsTotal = xarray.Dataset({'prec': (['time','x','y'], ds.prehourly.values),
-                  'temp2m':(['time','x','y'], ds.t2.values)},
-                   coords = {'longitude': (['x','y'], ds.lon.values),
+                  'temp2m':(['time','x','y'], ds.t2.values),
+                  'rh2m':(['time','x','y'], ds.rh2.values),
+                  'wind2m':(['time','x','y'], wind2m)}
+        coords = {'longitude': (['x','y'], ds.lon.values),
                           'latitude': (['x','y'], ds.lat.values),
-                          'time': xarray.DataArray.from_series(dates).values})    
+                          'time': xarray.DataArray.from_series(dates).values})
+
     # add attributes to the netCDF
         dsTotal.attrs['prec'] = 'Precipitation Hourly [mm]'
         dsTotal.attrs['temp2m'] = 'Two Meter Temperature [deg K]'
+        dsTotal.attrs['rh2m'] = 'Two Meter Relative Humidity [%?]'
+        dsTotal.attrs['wind2m'] = 'Two Meter Wind Speed [m/s]'
     # write the netcdf files back to the drive, using the year-month as the name
         dsTotal.to_netcdf(path + 'temp/' + file.split('_')[filePos], mode = 'w')
     print('done cleaning files')
@@ -98,8 +105,17 @@ df.columns = names
 df['date_time'] = pd.to_datetime(df['date_time'], format = "%m/%d/%Y-%H")
 df.set_index('date_time', inplace = True)
 
-all_T = pd.concat([df_TimeTemp-273.15, df['temp2m']], axis = 1, join_axes = [df_TimeTemp.index])
-all_P = pd.concat([df_TimePrec/1000, df['Precip']], axis = 1, join_axes = [df_TimeTemp.index])
+for i in range(xcord.shape[0]):
+    node_prec = df_TimePrec[df_TimePrec.columns[i]]
+    names_node_prec = ['date_time', 'Precip']
+    node_prec.columns = names_node_prec
+    df.update(node_prec, join='left', overwrite=True)
+    fileName = 'DHSVM_prec_Input_' + columnNames[i+1]
+    df.to_csv(path + fileName, sep='\t')
+
+#concatenate station data to the wrf data frame to explore
+#all_T = pd.concat([df_TimeTemp-273.15, df['temp2m']], axis = 1, join_axes = [df_TimeTemp.index])
+#all_P = pd.concat([df_TimePrec/1000, df['Precip']], axis = 1, join_axes = [df_TimeTemp.index])
 
 #all_P.plot()
 
@@ -107,8 +123,6 @@ all_P = pd.concat([df_TimePrec/1000, df['Precip']], axis = 1, join_axes = [df_Ti
 #all_T.resample('D', how = 'mean').plot()
 #df['temp2m'].groupby(df.index.year).mean().plot()
 
-# check if precip is in the same units
-
-#test_merge = pd.merge(left = df, right = df_TimePrec['37.734_-119.348'], on='date_time')
-                      #, left_on='Precip', right_on='37.734_-119.348')
-test_concat = pd.concat(df, df_TimePrec['37.734_-119.348'], axis = 1, join_axes = [df_TimePrec.index])
+#node_prec = df_TimePrec['37.734_-119.348'];
+#names_node_prec = ['date_time', 'Precip']
+#node_prec.columns = names_node_prec
