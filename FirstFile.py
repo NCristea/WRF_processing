@@ -29,7 +29,7 @@ def clean_netCDF(fileList):
         decoded = datetime.strptime(d.decode(encoding='UTF-8'),  "%Y-%m-%d_%H:%M:%S")
         return decoded
 
-# Stores the creates a new netCDF files with coordinat
+# Stores and creates a new netCDF files with coordinat
     for file in fileList:
         print(file)   
         ds = xarray.open_dataset(file , engine = 'scipy') # may not need engine = 'netcdf4' others are using engine = 'scipy'

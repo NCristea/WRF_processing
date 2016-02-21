@@ -1,6 +1,7 @@
 import pandas as pd
 import xarray
 import numpy as np
+from dask.diagnostics import ProgressBar
 
 path = '/Users/carina/desktop/WRF_data/'
 #current WRF runs - combination of microphysics and boundary conditions
@@ -9,7 +10,10 @@ path = '/Users/carina/desktop/WRF_data/'
 #Narr_Thomm
 
 #open the reduced dataset
-dsTotal = xarray.open_dataset(path + 'ds_reduced_NARR_Morr.nc', engine = 'scipy')
+dsTotal = xarray.open_dataset('/Users/carina/desktop/WRF_data/ds_reduced_NARR_Morr.nc', engine = 'scipy')
+#dsTotal.chunk({'time':400,'x':50,'y':50})
+xcord = x[:][0]
+ycord = y[:][0]
 
 #initialize numpy arrays
 all_Temp = np.zeros((dsTotal.time.shape[0], xcord.shape[0]))
