@@ -26,7 +26,7 @@ path = '/Users/carina/Desktop/WRF_data/'
 # Create a file list of all the netCDF files
 import glob
 fileList = glob.glob(path + '*.nc')
-# fileList.sort()
+fileList.sort()
 
 files_dict = {}
 
@@ -60,7 +60,7 @@ def decode(d):
     return decoded
 
 
-def process_month(radFile, surfFile):
+def process_month(radFile, surfFile, month):
     radDS = xarray.open_dataset(radFile, engine = 'scipy') # may not need engine = 'netcdf4' others are using engine = 'scipy'
     radDates = radDS.Times.to_series().apply(decode) # this creates a list of the varaibles Times in the netCDF file ds and then applies the decode function to each element
     dsTotal_rad = xarray.Dataset({'SWdown': (['time','x','y'], radDS.swdnbhourly.values),
@@ -69,7 +69,7 @@ def process_month(radFile, surfFile):
                                            'latitude': (['x','y'], radDS.lat.values),
                                            'time': xarray.DataArray.from_series(radDates).values})
 
-    surfDS = xarray.open_dataset(file , engine = 'scipy') # may not need engine = 'netcdf4' others are using engine = 'scipy'
+    surfDS = xarray.open_dataset(surfFile , engine = 'scipy') # may not need engine = 'netcdf4' others are using engine = 'scipy'
     surfDates = surfDS.Times.to_series().apply(decode) # this creates a list of the varaibles Times in the netCDF file ds and then applies the decode function to each element
     #calculate 2m wind speed from the 10 m u10 and v10
     wind2m = 0.54 * np.sqrt(surfDS.u10.values * surfDS.u10.values + surfDS.v10.values * surfDS.v10.values)
@@ -91,7 +91,9 @@ def process_month(radFile, surfFile):
     dsTotal_surf.attrs['LWdown'] = 'Incoming longwave radiation [W/m2]'
 
     # write the netcdf files back to the drive, using the year-month as the name
-    #dsTotal.to_netcdf(path + 'temp1/' + file.split('_')[filePos], mode = 'w')
+
+    #dsTotal_surf.to_netcdf(path + 'temp1/' + month + '.nc', mode = 'w')
+
     #print('done cleaning files')
 
     return dsTotal_surf
@@ -103,11 +105,13 @@ for k in sorted(files_dict):
     v = files_dict[k]
     radout_file = v['radout']
     surfout_file = v['surfout']
-    ds = process_month(radout_file, surfout_file)
+    ds = process_month(radout_file, surfout_file, k)
+
     if ds_total:
         ds_total = xray.concat([ds_total, ds], dim = 'time')
     else:
         ds_total = ds
+
 
 # ds_total.to_netcdf(path + 'ds_total_NARR_Morr')
 
@@ -123,8 +127,10 @@ xcord = xycord[:][0]
 ycord = xycord[:][1]
 
 reduced_ds = ds_total.isel(x=xcord, y=ycord)
+# df = reduced_ds.to_dataframe()
+# df.to_csv(path + 'reduced.csv')
+#reduced_ds.to_netcdf(path + 'ds_reduced_NARR_Morr.nc', format='NETCDF4', mode='w')
 reduced_ds.to_netcdf(path + 'ds_reduced_NARR_Morr.nc')
-
 
 
 '''

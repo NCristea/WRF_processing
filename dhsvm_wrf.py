@@ -10,10 +10,12 @@ path = '/Users/carina/desktop/WRF_data/'
 #Narr_Thomm
 
 #open the reduced dataset
-dsTotal = xarray.open_dataset('/Users/carina/desktop/WRF_data/ds_reduced_NARR_Morr.nc', engine = 'scipy')
+# dsTotal = xarray.open_dataset('/Users/carina/desktop/WRF_data/ds_reduced_NARR_Morr.nc', engine = 'scipy')
+dsTotal = xarray.open_dataset('/Users/carina/desktop/WRF_data/ds_reduced_NARR_Morr.nc', engine = 'netcdf4')
 #dsTotal.chunk({'time':400,'x':50,'y':50})
-xcord = x[:][0]
-ycord = y[:][0]
+#converts the dataset into pandas and numpy arrays
+xcord = dsTotal.x.to_series().values
+ycord = dsTotal.y.to_series().values
 
 #initialize numpy arrays
 all_Temp = np.zeros((dsTotal.time.shape[0], xcord.shape[0]))
