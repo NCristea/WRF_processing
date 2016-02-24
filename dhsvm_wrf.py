@@ -14,6 +14,7 @@ path = '/Users/carina/desktop/WRF_data/'
 dsTotal = xarray.open_dataset('/Users/carina/desktop/WRF_data/ds_reduced_NARR_Morr.nc', engine = 'netcdf4')
 #dsTotal.chunk({'time':400,'x':50,'y':50})
 #converts the dataset into pandas and numpy arrays
+
 xcord = dsTotal.x.to_series().values
 ycord = dsTotal.y.to_series().values
 
@@ -28,19 +29,18 @@ all_LW = np.zeros((dsTotal.time.shape[0], xcord.shape[0]))
 columnNames = ['date_time']
 
 for i in range(xcord.shape[0]):
-    selectTemp = dsTotal.sel_points(x = [xcord[i]], y = [ycord[i]]).temp2m
-    selectPrec = dsTotal.sel_points(x = [xcord[i]], y = [ycord[i]]).prec
-    selectWind = dsTotal.sel_points(x = [xcord[i]], y = [ycord[i]]).wind2m
-    selectRH = dsTotal.sel_points(x = [xcord[i]], y = [ycord[i]]).rh2m
-    selectSW = dsTotal.sel_points(x = [xcord[i]], y = [ycord[i]]).SWdown
-    selectLW = dsTotal.sel_points(x = [xcord[i]], y = [ycord[i]]).LWdown
-    # append all WRF nodes in a dataframe for each variable
-    all_Temp[:, i] = selectTemp
-    all_Prec[:, i] = selectPrec
+    selectTemp = dsTotal.isel_points(x = [i], y = [i]).temp2m
+    selectPrec = dsTotal.isel_points(x = [i], y = [i]).prec
+    selectWind = dsTotal.isel_points(x = [i], y = [i]).wind2m
+    selectRH = dsTotal.isel_points(x = [i], y = [i]).rh2m
+    selectSW = dsTotal.isel_points(x = [i], y = [i]).SWdown
+    selectLW = dsTotal.isel_points(x = [i], y = [i]).LWdown
+    all_Temp[:, i] = selectTemp - 273.15 #convert to Celsius
+    all_Prec[:, i] = selectPrec / 1000 # convert to m
     all_Wind[:, i] = selectWind
-    all_RH[:, i] = all_RH
-    all_SW[:, i] = all_SW
-    all_LW[:, i] = all_LW
+    all_RH[:, i] = selectRH
+    all_SW[:, i] = selectSW
+    all_LW[:, i] = selectLW
     #assign names to different columns as a function of the WRF node location (lat-long is in the name)
     columnNames.append(str(selectTemp.coords['latitude'].values[0]) + '_' + str(selectTemp.coords['longitude'].values[0]))
 
@@ -86,6 +86,14 @@ df.columns = names
 df['date_time'] = pd.to_datetime(df['date_time'], format = "%m/%d/%Y-%H")
 df.set_index('date_time', inplace = True)
 
+#take a quick look at all the T and P data - how do they compare with the station data
+
+#concatenate station data to the wrf data frame to explore
+all_T_with_station = pd.concat([df_TimeTemp, df['temp2m']], axis = 1, join_axes = [df_TimeTemp.index])
+all_P_with_station = pd.concat([df_TimePrec/1000, df['Precip']], axis = 1, join_axes = [df_TimeTemp.index])
+
+
+
 #scenario 1 - update the precipitation only and save DHSVM input files
 for i in range(xcord.shape[0]):
     node_prec = df_TimePrec[df_TimePrec.columns[i]]
@@ -93,7 +101,7 @@ for i in range(xcord.shape[0]):
     names_node_prec = ['date_time', 'Precip']
     node_prec.columns = names_node_prec
     df.update(node_prec, join='left', overwrite=True)
-    fileName = 'DHSVM_prec_Input_NARR_Morr' + columnNames[i+1]
+    fileName = 'DHSVM_prec_Input_NARR_Morr_' + columnNames[i+1]
     df.to_csv(path + fileName, sep='\t')
 
 #scenario2 - update all variables and save DHSVM input files
@@ -123,5 +131,7 @@ for i in range(xcord.shape[0]):
     df.update(node_rh, join='left', overwrite=True)
     df.update(node_sw, join='left', overwrite=True)
     df.update(node_lw, join='left', overwrite=True)
-    fileName = 'DHSVM_all_var_Input_NARR_Morr' + columnNames[i+1]
+    fileName = 'DHSVM_all_var_Input_NARR_Morr_' + columnNames[i+1]
     df.to_csv(path + fileName, sep='\t')
+
+# test the output
