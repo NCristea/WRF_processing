@@ -15,7 +15,11 @@ import warnings
 import os
 import pandas as pd
 from datetime import datetime
+from pytz import timezone
 import re
+
+western = timezone('US/Pacific')
+utc = timezone('UTC')
 
 path = '/Users/carina/Desktop/WRF_data/'
 
@@ -50,10 +54,22 @@ for file in fileList:
 
     files_dict[index] = file_dict
 
+#use this fcn if you want to export the netCDF in UTC timezone
+#def decode(d):
+#    decoded = datetime.strptime(d.decode(encoding='UTF-8'),  "%Y-%m-%d_%H:%M:%S")
+#    return decoded
 
+#use this fcn if you want to export in the timezone of your choice - this case Pacific
 def decode(d):
     decoded = datetime.strptime(d.decode(encoding='UTF-8'),  "%Y-%m-%d_%H:%M:%S")
-    return decoded
+    western_dt = utc.localize(decoded).astimezone(western)
+    return western_dt
+
+#utc = pytz.timezone('UTC')
+#naive_dt = datetime(2020, 10, 5, 15, 0, 0)
+#western = timezone('US/Pacific')
+#western_dt = tz.localize(naive_dt, is_dst=None).astimezone(western)
+
 
 
 def process_month(radFile, surfFile, month):

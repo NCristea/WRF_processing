@@ -2,12 +2,13 @@ import pandas as pd
 import xarray
 import numpy as np
 from dask.diagnostics import ProgressBar
+from pytz import timezone
+
+western = timezone('US/Pacific')
+utc = timezone('UTC')
 
 path = '/Users/carina/desktop/WRF_data/'
 #current WRF runs - combination of microphysics and boundary conditions
-#NARR_Morr
-#Narr_WSM6
-#Narr_Thomm
 
 #open the reduced dataset
 # dsTotal = xarray.open_dataset('/Users/carina/desktop/WRF_data/ds_reduced_NARR_Morr.nc', engine = 'scipy')
@@ -36,7 +37,7 @@ for i in range(xcord.shape[0]):
     selectSW = dsTotal.isel_points(x = [i], y = [i]).SWdown
     selectLW = dsTotal.isel_points(x = [i], y = [i]).LWdown
     all_Temp[:, i] = selectTemp - 273.15 #convert to Celsius
-    all_Prec[:, i] = selectPrec / 1000 # convert to m
+    all_Prec[:, i] = selectPrec/1000 # convert to m
     all_Wind[:, i] = selectWind
     all_RH[:, i] = selectRH
     all_SW[:, i] = selectSW
@@ -52,8 +53,14 @@ df_RH = pd.DataFrame(all_RH)
 df_SW = pd.DataFrame(all_SW)
 df_LW = pd.DataFrame(all_LW)
 
+
 #get the time variable from the original netCDF file
 df_Time = pd.DataFrame(dsTotal.time.values)
+dtIndex = pd.DatetimeIndex(dsTotal.time.values)
+freq = pd.infer_freq(dtIndex);
+#df_Time = df_Time.set_index(dtIndex)
+# this is slow
+#df_Time.apply(tz_update_utc)
 
 df_TimeTemp = pd.concat([df_Time, df_Temp], axis = 1)
 df_TimePrec = pd.concat([df_Time, df_Prec], axis = 1)
@@ -72,26 +79,40 @@ df_TimeSW.columns = columnNames
 df_TimeLW.columns = columnNames
 
 #the newly created dataframes can't read the time values-> need to set the time as index
-df_TimeTemp.set_index('date_time', inplace = True)
-df_TimePrec.set_index('date_time', inplace = True)
-df_TimeWind.set_index('date_time', inplace = True)
-df_TimeRH.set_index('date_time', inplace = True)
-df_TimeSW.set_index('date_time', inplace = True)
-df_TimeLW.set_index('date_time', inplace = True)
+df_TimeTemp.set_index(pd.DatetimeIndex(df_TimeTemp['date_time'], tz=utc, freq=freq).tz_convert(western), inplace=True)
+df_TimePrec.set_index(pd.DatetimeIndex(df_TimePrec['date_time'], tz=utc, freq=freq).tz_convert(western), inplace=True)
+df_TimeWind.set_index(pd.DatetimeIndex(df_TimeWind['date_time'], tz=utc, freq=freq).tz_convert(western), inplace=True)
+df_TimeRH.set_index(pd.DatetimeIndex(df_TimeRH['date_time'], tz=utc, freq=freq).tz_convert(western), inplace=True)
+df_TimeSW.set_index(pd.DatetimeIndex(df_TimeSW['date_time'], tz=utc, freq=freq).tz_convert(western), inplace=True)
+df_TimeLW.set_index(pd.DatetimeIndex(df_TimeLW['date_time'], tz=utc, freq=freq).tz_convert(western), inplace=True)
+
 
 #open the station data file and stich WRF data
 df = pd.read_csv(path + 'DHSVM_example.txt', sep = '\t')
 names = ['date_time', 'temp2m', 'wind2m', 'RH', 'SW', 'LW', 'Precip']
 df.columns = names
-df['date_time'] = pd.to_datetime(df['date_time'], format = "%m/%d/%Y-%H")
-df.set_index('date_time', inplace = True)
+'''
+The dates in DHSVM are not taking into account daylight savings. Because of that
+we can't use the timezone for the Datetime index.
+To work around this we convert the UTC timezone
+used in netCDF to US/Pacific...
+'''
+df['date_time'] = pd.to_datetime(df['date_time'], format="%m/%d/%Y-%H")
+df.set_index(pd.DatetimeIndex(df['date_time']), inplace=True)
+
+
+#open the station data file and stich WRF data
+#df = pd.read_csv(path + 'DHSVM_example.txt', sep = '\t')
+#names = ['date_time', 'temp2m', 'wind2m', 'RH', 'SW', 'LW', 'Precip']
+#df.columns = names
+#df['date_time'] = pd.to_datetime(df['date_time'], format = "%m/%d/%Y-%H")
+#df.set_index('date_time', inplace = True)
 
 #take a quick look at all the T and P data - how do they compare with the station data
 
 #concatenate station data to the wrf data frame to explore
 all_T_with_station = pd.concat([df_TimeTemp, df['temp2m']], axis = 1, join_axes = [df_TimeTemp.index])
-all_P_with_station = pd.concat([df_TimePrec/1000, df['Precip']], axis = 1, join_axes = [df_TimeTemp.index])
-
+all_P_with_station = pd.concat([df_TimePrec, df['Precip']], axis = 1, join_axes = [df_TimeTemp.index])
 
 
 #scenario 1 - update the precipitation only and save DHSVM input files
@@ -135,3 +156,4 @@ for i in range(xcord.shape[0]):
     df.to_csv(path + fileName, sep='\t')
 
 # test the output
+
