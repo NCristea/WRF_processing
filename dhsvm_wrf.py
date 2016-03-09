@@ -3,11 +3,15 @@ import xarray
 import numpy as np
 from dask.diagnostics import ProgressBar
 from pytz import timezone
+import utm
 
 western = timezone('US/Pacific')
 utc = timezone('UTC')
 
 path = '/Users/carina/desktop/WRF_data/'
+valName1 = 'dhsvm_prec_input_NARR_Morr_'
+valName2 = 'dhsvm_all_var_input_NARR_Morr_'
+
 #current WRF runs - combination of microphysics and boundary conditions
 
 #open the reduced dataset
@@ -26,6 +30,10 @@ all_Wind = np.zeros((dsTotal.time.shape[0], xcord.shape[0]))
 all_RH = np.zeros((dsTotal.time.shape[0], xcord.shape[0]))
 all_SW = np.zeros((dsTotal.time.shape[0], xcord.shape[0]))
 all_LW = np.zeros((dsTotal.time.shape[0], xcord.shape[0]))
+all_lat = np.zeros(xcord.shape[0])
+all_long = np.zeros(xcord.shape[0])
+all_utm_N = np.zeros(xcord.shape[0])
+all_utm_E = np.zeros(xcord.shape[0])
 
 columnNames = ['date_time']
 
@@ -44,6 +52,13 @@ for i in range(xcord.shape[0]):
     all_LW[:, i] = selectLW
     #assign names to different columns as a function of the WRF node location (lat-long is in the name)
     columnNames.append(str(selectTemp.coords['latitude'].values[0]) + '_' + str(selectTemp.coords['longitude'].values[0]))
+    all_lat[i] = selectTemp.coords['latitude'].values[0]
+    all_long[i] = selectTemp.coords['longitude'].values[0]
+    all_utm = utm.from_latlon(selectTemp.coords['latitude'].values[0], selectTemp.coords['longitude'].values[0])
+    utm_N = all_utm[0]
+    utm_E = all_utm[1]
+    all_utm_N[i] = utm_N
+    all_utm_E[i] = utm_E
 
 # convert the numpy arrays to pandas dataframes
 df_Temp = pd.DataFrame(all_Temp)
@@ -122,7 +137,7 @@ for i in range(xcord.shape[0]):
     names_node_prec = ['date_time', 'Precip']
     node_prec.columns = names_node_prec
     df.update(node_prec, join='left', overwrite=True)
-    fileName = 'DHSVM_prec_Input_NARR_Morr_' + columnNames[i+1]
+    fileName = valName1 + columnNames[i+1]
     df.to_csv(path + fileName, sep='\t')
 
 #scenario2 - update all variables and save DHSVM input files
@@ -152,7 +167,7 @@ for i in range(xcord.shape[0]):
     df.update(node_rh, join='left', overwrite=True)
     df.update(node_sw, join='left', overwrite=True)
     df.update(node_lw, join='left', overwrite=True)
-    fileName = 'DHSVM_all_var_Input_NARR_Morr_' + columnNames[i+1]
+    fileName = valName2 + columnNames[i+1]
     df.to_csv(path + fileName, sep='\t')
 
 # test the output

@@ -22,6 +22,7 @@ western = timezone('US/Pacific')
 utc = timezone('UTC')
 
 path = '/Users/carina/Desktop/WRF_data/'
+fileName = 'ds_reduced_NARR_Morr.nc'
 
 # Create a file list of all the netCDF files
 import glob
@@ -129,7 +130,7 @@ for k in sorted(files_dict):
 
 #subsetting the WRF dataset for the upper Tuolumne area
 
-bb = {'minLong':-119.40, 'maxLong':-119.20, 'minLat': 37.73, 'maxLat':37.96}
+bb = {'minLong':-119.5, 'maxLong':-119.13, 'minLat': 37.66, 'maxLat':38.03}
 
 long = ds_total.coords['longitude'].values
 lat = ds_total.coords['latitude'].values
@@ -142,5 +143,5 @@ reduced_ds = ds_total.isel(x=xcord, y=ycord)
 # df = reduced_ds.to_dataframe()
 # df.to_csv(path + 'reduced.csv')
 #reduced_ds.to_netcdf(path + 'ds_reduced_NARR_Morr.nc', format='NETCDF4', mode='w')
-reduced_ds.to_netcdf(path + 'ds_reduced_NARR_Morr.nc')
+reduced_ds.to_netcdf(path + fileName)
 
